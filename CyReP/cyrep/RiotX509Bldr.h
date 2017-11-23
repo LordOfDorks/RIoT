@@ -39,6 +39,8 @@ X509GetDeviceCertTBS(
     RIOT_X509_TBS_DATA  *TbsData,
     RIOT_ECC_PUBLIC     *DevIdKeyPub,
     RIOT_ECC_PUBLIC     *IssuerIdKeyPub,
+    uint8_t             *Tcps,
+    uint32_t            TcpsLen,
     uint32_t            PathLength
 );
 
@@ -56,6 +58,8 @@ X509GetAliasCertTBS(
     RIOT_ECC_PUBLIC     *DevIdKeyPub,
     uint8_t             *Fwid,
     uint32_t             FwidLen,
+    uint8_t             *Tcps,
+    uint32_t             TcpsLen,
     uint32_t             PathLen
 );
 

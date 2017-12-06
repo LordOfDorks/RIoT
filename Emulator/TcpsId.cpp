@@ -35,8 +35,8 @@ FreeTCPSId(
 
 CborError
 pBuildTCPSIdentity(
-    TcpsProperty *Properties,
-    uint32_t PropertyCount,
+    TcpsAssertion *Assertions,
+    uint32_t AssertionCount,
     uint8_t *Id,
     uint32_t IdSize,
     uint32_t *SizeNeeded
@@ -45,10 +45,10 @@ pBuildTCPSIdentity(
     CborError err;
     CborEncoder encodedId;
     CborEncoder map;
-    uint32_t entryCount = PropertyCount;
+    uint32_t entryCount = AssertionCount;
 
-    if (PropertyCount == 0 ||
-        Properties == NULL ||
+    if (AssertionCount == 0 ||
+        Assertions == NULL ||
         SizeNeeded == NULL)
     {
         err = CborUnknownError;
@@ -65,10 +65,10 @@ pBuildTCPSIdentity(
     CLEANUP_ON_BUILD_ERR( cbor_encode_text_stringz( &map, TCPS_IDENTITY_MAP_VER ) );
     CLEANUP_ON_BUILD_ERR( cbor_encode_int( &map, TCPS_ID_MAP_VER_CURENT ) );
 
-    for (uint32_t i = 0; i < PropertyCount; i++)
+    for (uint32_t i = 0; i < AssertionCount; i++)
     {
-        CLEANUP_ON_BUILD_ERR( cbor_encode_text_stringz( &map, Properties[i].Name ) );
-        CLEANUP_ON_BUILD_ERR( cbor_encode_byte_string( &map, Properties[i].Data, Properties[i].DataSize ) );
+        CLEANUP_ON_BUILD_ERR( cbor_encode_text_stringz( &map, Assertions[i].Name ) );
+        CLEANUP_ON_BUILD_ERR( cbor_encode_byte_string( &map, Assertions[i].Data, Assertions[i].DataSize ) );
     }
 
     CLEANUP_ON_BUILD_ERR( cbor_encoder_close_container( &encodedId, &map ) );
@@ -85,8 +85,8 @@ Cleanup:
 
 RIOT_STATUS
 pAllocAndBuildIdentity(
-    TcpsProperty *Properties,
-    uint32_t PropertyCount,
+    TcpsAssertion *Assertions,
+    uint32_t AssertionCount,
     uint8_t **Id,
     uint32_t *IdSize
 )
@@ -97,8 +97,8 @@ pAllocAndBuildIdentity(
     uint32_t        localIdSize = 0;
     uint32_t        sizeNeeded;
 
-    if (PropertyCount == 0 ||
-        Properties == NULL ||
+    if (AssertionCount == 0 ||
+        Assertions == NULL ||
         Id == NULL ||
         IdSize == NULL )
     {
@@ -106,8 +106,8 @@ pAllocAndBuildIdentity(
         goto Cleanup;
     }
 
-    err = pBuildTCPSIdentity( Properties,
-        PropertyCount,
+    err = pBuildTCPSIdentity( Assertions,
+        AssertionCount,
         NULL,
         0,
         &sizeNeeded );
@@ -121,8 +121,8 @@ pAllocAndBuildIdentity(
     memset( localId, 0x00, localIdSize );
     sizeNeeded = 0;
 
-    err = pBuildTCPSIdentity( Properties,
-        PropertyCount,
+    err = pBuildTCPSIdentity( Assertions,
+        AssertionCount,
         localId,
         localIdSize,
         &sizeNeeded );
@@ -164,7 +164,7 @@ BuildTCPSAliasIdentity(
     uint32_t *IdSize
 )
 {
-    TcpsProperty    aliasProp[MAX_ALIAS_PROP_COUNT];
+    TcpsAssertion   aliasAssertion[MAX_ALIAS_PROP_COUNT];
     uint32_t        count = 0;
     uint8_t         authBuffer[65];
     uint32_t        authBufferLen;
@@ -172,23 +172,23 @@ BuildTCPSAliasIdentity(
     if (AuthKeyPub != NULL)
     {
         RiotCrypt_ExportEccPub(AuthKeyPub, authBuffer, &authBufferLen);
-        aliasProp[count].Data = authBuffer;
-        aliasProp[count].DataSize = authBufferLen;
-        aliasProp[count].Name = TCPS_IDENTITY_MAP_AUTH;
+        aliasAssertion[count].Data = authBuffer;
+        aliasAssertion[count].DataSize = authBufferLen;
+        aliasAssertion[count].Name = TCPS_IDENTITY_MAP_AUTH;
         count++;
     }
 
     if (FwidSize > 0)
     {
-        aliasProp[count].Data = Fwid;
-        aliasProp[count].DataSize = FwidSize;
-        aliasProp[count].Name = TCPS_IDENTITY_MAP_FWID;
+        aliasAssertion[count].Data = Fwid;
+        aliasAssertion[count].DataSize = FwidSize;
+        aliasAssertion[count].Name = TCPS_IDENTITY_MAP_FWID;
         count++;
     }
 
     assert( count <= MAX_ALIAS_PROP_COUNT );
 
-    return pAllocAndBuildIdentity( aliasProp,
+    return pAllocAndBuildIdentity( aliasAssertion,
         count,
         Id,
         IdSize );
@@ -205,7 +205,7 @@ BuildTCPSDeviceIdentity(
     uint32_t *IdSize
 )
 {
-    TcpsProperty    aliasProp[MAX_DEVICE_PROP_COUNT];
+    TcpsAssertion   aliasAssertion[MAX_DEVICE_PROP_COUNT];
     uint32_t        count = 0;
     uint8_t         encBuffer[65];
     uint32_t        encBufferLen;
@@ -213,31 +213,31 @@ BuildTCPSDeviceIdentity(
     uint32_t        authBufferLen;
 
     RiotCrypt_ExportEccPub(Pub, encBuffer, &encBufferLen);
-    aliasProp[count].Data = encBuffer;
-    aliasProp[count].DataSize = encBufferLen;
-    aliasProp[count].Name = TCPS_IDENTITY_MAP_PUBKEY;
+    aliasAssertion[count].Data = encBuffer;
+    aliasAssertion[count].DataSize = encBufferLen;
+    aliasAssertion[count].Name = TCPS_IDENTITY_MAP_PUBKEY;
     count++;
 
     if (AuthKeyPub != NULL)
     {
         RiotCrypt_ExportEccPub(AuthKeyPub, authBuffer, &authBufferLen);
-        aliasProp[count].Data = authBuffer;
-        aliasProp[count].DataSize = authBufferLen;
-        aliasProp[count].Name = TCPS_IDENTITY_MAP_AUTH;
+        aliasAssertion[count].Data = authBuffer;
+        aliasAssertion[count].DataSize = authBufferLen;
+        aliasAssertion[count].Name = TCPS_IDENTITY_MAP_AUTH;
         count++;
     }
 
     if (FwidSize > 0)
     {
-        aliasProp[count].Data = Fwid;
-        aliasProp[count].DataSize = FwidSize;
-        aliasProp[count].Name = TCPS_IDENTITY_MAP_FWID;
+        aliasAssertion[count].Data = Fwid;
+        aliasAssertion[count].DataSize = FwidSize;
+        aliasAssertion[count].Name = TCPS_IDENTITY_MAP_FWID;
         count++;
     }
 
     assert( count <= MAX_DEVICE_PROP_COUNT );
 
-    return pAllocAndBuildIdentity( aliasProp,
+    return pAllocAndBuildIdentity( aliasAssertion,
         count,
         Id,
         IdSize );

@@ -33,7 +33,7 @@ Confidential Information
 
 // Note also that there is no requirement on the UDS length for a device.
 // A 256-bit UDS is recommended but this size may vary among devices.
-#define DICE_UDS_LENGTH         0x20
+#define DICE_UDS_LENGTH     0x20
 
 // Random (i.e., simulated) RIoT Core "measurement"
 uint8_t rDigest[DICE_DIGEST_LENGTH] = {
@@ -41,6 +41,9 @@ uint8_t rDigest[DICE_DIGEST_LENGTH] = {
     0x96, 0x77, 0xc5, 0x5d, 0x59, 0x0b, 0x92, 0x94,
     0xe0, 0x94, 0xab, 0xaf, 0xd7, 0x40, 0x78, 0x7e,
     0x05, 0x0d, 0xfe, 0x6d, 0x85, 0x90, 0x53, 0xa0 };
+
+#define CODE_AUTHORITY_SECRET         "Authority Signer Secret"
+#define CODE_AUTHORITY_SECRET_SIZE    lblSize(CODE_AUTHORITY_SECRET)
 
 // Size, in bytes, returned when the required certificate buffer size is
 // requested.  For this emulator the actual size (~552 bytes) is static,
@@ -136,7 +139,8 @@ main()
 
     RiotCrypt_DeriveEccKey(&authKeyPub,
         &authKeyPriv,
-        "Authority Singer Secret", lblSize("Authority Singer Secret"),
+        (const uint8_t *)CODE_AUTHORITY_SECRET,
+        CODE_AUTHORITY_SECRET_SIZE,
         (const uint8_t *)RIOT_LABEL_IDENTITY,
         lblSize(RIOT_LABEL_IDENTITY));
 

@@ -19,6 +19,7 @@ Confidential Information
 
 // OIDs.  Note that the encoder expects a -1 sentinel.
 static int riotOID[] = { 2,23,133,5,4,1,-1 };
+static int tcpsOID[] = { 2,23,133,5,4,2,-1 };
 static int ecdsaWithSHA256OID[] = { 1,2,840,10045,4,3,2,-1 };
 static int ecPublicKeyOID[] = { 1,2,840,10045, 2,1,-1 };
 static int prime256v1OID[] = { 1,2,840,10045, 3,1,7,-1 };
@@ -52,6 +53,8 @@ X509AddExtensions(
     uint32_t             AliasKeyIdLen,
     uint8_t             *Fwid,
     uint32_t             FwidLen,
+    uint8_t             *Tcps,
+    uint32_t             TcpsLen,
     uint32_t             PathLen
 )
 // Create the RIoT extensions.  The RIoT subject altName + extended key usage.
@@ -133,6 +136,15 @@ X509AddExtensions(
     CHK(                DERPopNesting(Tbs));
     CHK(            DERPopNesting(Tbs));
     CHK(        DERPopNesting(Tbs));
+    if(TcpsLen > 0)
+    {
+        CHK(    DERStartSequenceOrSet(Tbs, true));
+        CHK(        DERAddOID(Tbs, tcpsOID));
+        CHK(        DERStartEnvelopingOctetString(Tbs));
+        CHK(            DERAddBitString(Tbs, Tcps, TcpsLen));
+        CHK(        DERPopNesting(Tbs));
+        CHK(    DERPopNesting(Tbs));
+    }
     CHK(    DERPopNesting(Tbs));
     CHK(DERPopNesting(Tbs));
 
@@ -189,6 +201,8 @@ X509GetDeviceCertTBS(
     RIOT_X509_TBS_DATA  *TbsData,
     RIOT_ECC_PUBLIC     *DevIdKeyPub,
     RIOT_ECC_PUBLIC     *IssuerIdKeyPub,
+    uint8_t             *Tcps,
+    uint32_t            TcpsLen,
     uint32_t            PathLength
 )
 {
@@ -286,6 +300,15 @@ X509GetDeviceCertTBS(
     CHK(                    DERPopNesting(Tbs));
     CHK(                DERPopNesting(Tbs));
     CHK(            DERPopNesting(Tbs));
+    if(TcpsLen > 0)
+    {
+        CHK(        DERStartSequenceOrSet(Tbs, true));
+        CHK(            DERAddOID(Tbs, tcpsOID));
+        CHK(            DERStartEnvelopingOctetString(Tbs));
+        CHK(                DERAddBitString(Tbs, Tcps, TcpsLen));
+        CHK(            DERPopNesting(Tbs));
+        CHK(        DERPopNesting(Tbs));
+    }
     CHK(        DERPopNesting(Tbs));
     CHK(    DERPopNesting(Tbs));
     CHK(DERPopNesting(Tbs));
@@ -338,6 +361,8 @@ X509GetAliasCertTBS(
     RIOT_ECC_PUBLIC     *DevIdKeyPub,
     uint8_t             *Fwid,
     uint32_t             FwidLen,
+    uint8_t             *Tcps,
+    uint32_t             TcpsLen,
     uint32_t             PathLen
 )
 {
@@ -367,7 +392,7 @@ X509GetAliasCertTBS(
     CHK(        DERAddBitString(Tbs, encBuffer, encBufferLen));
     CHK(    DERPopNesting(Tbs));
             RiotCrypt_ExportEccPub(DevIdKeyPub, encBuffer, &encBufferLen);
-    CHK(    X509AddExtensions(Tbs, encBuffer, encBufferLen, subjectKeyId, sizeof(subjectKeyId), Fwid, FwidLen, PathLen));
+    CHK(    X509AddExtensions(Tbs, encBuffer, encBufferLen, subjectKeyId, sizeof(subjectKeyId), Fwid, FwidLen, Tcps, TcpsLen, PathLen));
     CHK(DERPopNesting(Tbs));
     
     ASRT(DERGetNestingDepth(Tbs) == 0);

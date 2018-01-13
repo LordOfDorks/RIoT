@@ -211,9 +211,9 @@ RiotCrypt_ImportEccPub(
 
 void
 RiotCrypt_ExportEccPub(
-    RIOT_ECC_PUBLIC     *a,     // IN:  TODO
-    uint8_t             *b,     // OUT: TODO
-    uint32_t            *s      // OUT: TODO
+    const RIOT_ECC_PUBLIC   *a,     // IN:  TODO
+    uint8_t                 *b,     // OUT: TODO
+    uint32_t                *s      // OUT: TODO
 )
 {
     *b++ = 0x04;
@@ -224,7 +224,6 @@ RiotCrypt_ExportEccPub(
         *s = 1 + 2 * RIOT_ECC_COORD_BYTES;
     }
 }
-
 
 RIOT_STATUS
 RiotCrypt_Sign(

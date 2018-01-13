@@ -346,7 +346,7 @@ pAddAssertionBuffer(
             return RIOT_FAILURE;
         }
         index = TcpsId->Used++;
-        strcpy_s(TcpsId->AssertionArray[index].Name, Key);
+        memcpy(TcpsId->AssertionArray[index].Name, Key, strlen(Key));
     }
     TcpsId->AssertionArray[index].DataType = ASSERT_TYPE_BUFFER;
     TcpsId->AssertionArray[index].Data.Buff.Value = Value;

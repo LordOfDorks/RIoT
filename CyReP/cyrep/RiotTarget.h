@@ -69,6 +69,10 @@ typedef unsigned long long uint64_t;  // 64-bit unsigned integer
 #include <assert.h>
 #include "main.h"
 #include "stm32l4xx_hal.h"
+
+#elif defined(USE_OPTEE)
+#include <stdint.h>
+#include <string.h>
 #endif
 
 #else

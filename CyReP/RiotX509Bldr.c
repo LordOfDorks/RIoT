@@ -506,9 +506,9 @@ Error:
 
 int
 X509GetDERCsrTbs(
-    DERBuilderContext   *Context,
-    RIOT_X509_TBS_DATA  *TbsData,
-    RIOT_ECC_PUBLIC*      DeviceIDPub
+    DERBuilderContext       *Context,
+    RIOT_X509_TBS_DATA      *TbsData,
+    const RIOT_ECC_PUBLIC   *DeviceIDPub
 )
 {
     uint8_t     encBuffer[65];
@@ -715,9 +715,9 @@ Error:
 
 int
 X509GetEccPrv(
-    DERBuilderContext   *Context,
-    ecc_publickey       *Pub,
-    ecc_privatekey      *Prv
+    DERBuilderContext       *Context,
+    const ecc_publickey     *Pub,
+    const ecc_privatekey    *Prv
 )
 {
     uint8_t     encBuffer[65];

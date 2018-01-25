@@ -149,7 +149,7 @@ X509AddExtensions(
         CHK(    DERStartSequenceOrSet(Tbs, true));
         CHK(        DERAddOID(Tbs, tcpsOID));
         CHK(        DERStartEnvelopingOctetString(Tbs));
-        CHK(            DERAddBitString(Tbs, Tcps, TcpsLen));
+        CHK(            DERAddOctetString(Tbs, Tcps, TcpsLen));
         CHK(        DERPopNesting(Tbs));
         CHK(    DERPopNesting(Tbs));
     }
@@ -319,7 +319,7 @@ X509GetDeviceCertTBS(
         CHK(        DERStartSequenceOrSet(Tbs, true));
         CHK(            DERAddOID(Tbs, tcpsOID));
         CHK(            DERStartEnvelopingOctetString(Tbs));
-        CHK(                DERAddBitString(Tbs, Tcps, TcpsLen));
+        CHK(                DERAddOctetString(Tbs, Tcps, TcpsLen));
         CHK(            DERPopNesting(Tbs));
         CHK(        DERPopNesting(Tbs));
     }
@@ -683,6 +683,59 @@ X509MakeRootCert(
     CHK(DERPopNesting(RootCert));
 
     ASRT(DERGetNestingDepth(RootCert) == 0);
+    return 0;
+
+Error:
+    return -1;
+}
+
+int
+X509GetEccPub(
+    DERBuilderContext   *Context,
+    ecc_publickey       *Pub
+)
+{
+    uint8_t     encBuffer[65];
+    uint32_t    encBufferLen;
+
+    CHK(DERStartSequenceOrSet(Context, true));
+    CHK(    DERStartSequenceOrSet(Context, true));
+    CHK(        DERAddOID(Context, ecPublicKeyOID));
+    CHK(        DERAddOID(Context, prime256v1OID));
+    CHK(    DERPopNesting(Context));
+            RiotCrypt_ExportEccPub(Pub, encBuffer, &encBufferLen);
+    CHK(    DERAddBitString(Context, encBuffer, encBufferLen * 8));
+    CHK(DERPopNesting(Context));
+
+    return 0;
+
+Error:
+    return -1;
+}
+
+int
+X509GetEccPrv(
+    DERBuilderContext   *Context,
+    ecc_publickey       *Pub,
+    ecc_privatekey      *Prv
+)
+{
+    uint8_t     encBuffer[65];
+    uint32_t    encBufferLen = ((BIGLEN - 1) * 4);
+
+    CHK(DERStartSequenceOrSet(Context, true));
+    CHK(    DERAddInteger(Context, 1));
+            BigValToBigInt(encBuffer, Prv);
+    CHK(    DERAddOctetString(Context, encBuffer, encBufferLen));
+    CHK(    DERStartExplicit(Context, 0));
+    CHK(        DERAddOID(Context, prime256v1OID));
+    CHK(    DERPopNesting(Context));
+            RiotCrypt_ExportEccPub(Pub, encBuffer, &encBufferLen);
+    CHK(    DERStartExplicit(Context, 1));
+    CHK(        DERAddBitString(Context, encBuffer, encBufferLen));
+    CHK(    DERPopNesting(Context));
+    CHK(DERPopNesting(Context));
+
     return 0;
 
 Error:

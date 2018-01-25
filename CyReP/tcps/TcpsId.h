@@ -24,15 +24,30 @@ extern "C" {
 //  share the following defines.
 #define TCPS_ID_MAP_VER_CURENT    1
 
+#define MAX_ASSERTION_KEY_LEN      0xf
 #define TCPS_IDENTITY_MAP_VER      "VER"
 #define TCPS_IDENTITY_MAP_FWID     "FIRMWID"
 #define TCPS_IDENTITY_MAP_AUTH     "CODEAUTH"
 #define TCPS_IDENTITY_MAP_PUBKEY   "PUBKEY"
 
+//  Rough estimate of encoded sizes for static buffer declaration.
+#define TCPS_ID_EST_ENCODING       MAX_ASSERTION_KEY_LEN + 0x10
+#define TCPS_ID_FWID_LENGTH        RIOT_DIGEST_LENGTH + TCPS_ID_EST_ENCODING
+#define TCPS_ID_PUBKEY_LENGTH      0x41 + TCPS_ID_EST_ENCODING
+
+#define ASSERT_TYPE_BUFFER      0
+#define ASSERT_TYPE_INT         1
+
 typedef struct _TcpsAssertion {
-    char *Name;
-    uint8_t *Data;
-    uint32_t DataSize;
+    char Name[MAX_ASSERTION_KEY_LEN];
+    uint32_t DataType;
+    union {
+        struct {
+            const uint8_t *Value;
+            uint32_t Size;
+        } Buff;
+        int Value;
+    } Data;
 }TcpsAssertion;
 
 RIOT_STATUS
@@ -40,8 +55,9 @@ BuildTCPSAliasIdentity(
     RIOT_ECC_PUBLIC *AuthKeyPub,
     uint8_t *Fwid,
     uint32_t FwidSize,
-    uint8_t **Id,
-    uint32_t *IdSize
+    uint8_t *Id,
+    uint32_t IdSize,
+    uint32_t *Written
 );
 
 RIOT_STATUS
@@ -50,13 +66,22 @@ BuildTCPSDeviceIdentity(
     RIOT_ECC_PUBLIC *AuthKeyPub,
     uint8_t *Fwid,
     uint32_t FwidSize,
-    uint8_t **Id,
-    uint32_t *IdSize
+    uint8_t *Id,
+    uint32_t IdSize,
+    uint32_t *Written
 );
 
-void
-FreeTCPSId(
-    uint8_t *Id
+RIOT_STATUS
+ModifyTCPSDeviceIdentity(
+    uint8_t *ExistingId,
+    uint32_t ExistingIdSize,
+    RIOT_ECC_PUBLIC *Pub,
+    RIOT_ECC_PUBLIC *AuthKeyPub,
+    uint8_t *Fwid,
+    uint32_t FwidSize,
+    uint8_t *NewId,
+    uint32_t NewIdSize,
+    uint32_t *Written
 );
 
 #ifdef __cplusplus

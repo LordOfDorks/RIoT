@@ -52,6 +52,10 @@ uint8_t rDigest[DICE_DIGEST_LENGTH] = {
 // just pick a reasonable minimum buffer size and worry about this later.
 #define REASONABLE_MIN_CERT_SIZE    DER_MAX_TBS
 
+// Estimate the buffer size needed, in bytes, for a TCPS ID. In our case
+// we will not have more then two PUBKEYs and a FW measurement.
+#define TCPS_ID_BUFFER_LENGTH      (TCPS_ID_PUBKEY_LENGTH * 2) + TCPS_ID_FWID_LENGTH
+
 // The static data fields that make up the Alias Cert "to be signed" region
 RIOT_X509_TBS_DATA x509AliasTBSData = { { 0 },
                                        "RIoT Core", "MSR_TEST", "US",
@@ -184,8 +188,9 @@ CreateDeviceAuthBundle(
     RIOT_ECC_SIGNATURE  tbsSig = { 0 };
     DERBuilderContext   derCtx = { 0 };
     uint32_t            length = 0;
-    uint8_t             *Tcps = NULL;
+    uint8_t             Tcps[TCPS_ID_BUFFER_LENGTH];
     uint32_t            TcpsLen = 0;
+    RIOT_STATUS         status;
 
     // REVISIT: Implement "required size" invocation for this function?
 
@@ -227,7 +232,7 @@ CreateDeviceAuthBundle(
     length = sizeof(PEM);
     DERInitContext(&derCtx, derBuffer, DER_MAX_TBS);
     X509GetDEREccPub(&derCtx, deviceIDPub);
-    DERtoPEM(&derCtx, PUBLICKEY_TYPE, PEM, &length);
+    DERtoPEM(&derCtx, R_PUBLICKEY_TYPE, PEM, &length);
     *DeviceIDPublicEncodedSize = length;
     memcpy(DeviceIDPublicEncoded, PEM, length);
 
@@ -244,7 +249,7 @@ CreateDeviceAuthBundle(
     length = sizeof(PEM);
     DERInitContext(&derCtx, derBuffer, DER_MAX_TBS);
     X509GetDEREcc(&derCtx, aliasKeyPub, aliasKeyPriv);
-    DERtoPEM(&derCtx, ECC_PRIVATEKEY_TYPE, PEM, &length);
+    DERtoPEM(&derCtx, R_ECC_PRIVATEKEY_TYPE, PEM, &length);
     *AliasKeyEncodedSize = length;
     memcpy(AliasKeyEncoded, PEM, length);
 
@@ -269,9 +274,12 @@ CreateDeviceAuthBundle(
     digest[0] &= 0x7F; // Ensure that the serial number is positive
     digest[0] |= 0x01; // Ensure that there is no leading zero
     memcpy(x509AliasTBSData.SerialNum, digest, sizeof(x509AliasTBSData.SerialNum));
-    BuildTCPSAliasIdentity(AuthKeyPub,
+    status = BuildTCPSAliasIdentity(AuthKeyPub,
         Fwid, RIOT_DIGEST_LENGTH,
-        &Tcps, &TcpsLen);
+        Tcps, TCPS_ID_BUFFER_LENGTH, &TcpsLen);
+    if (status != RIOT_SUCCESS) {
+        printf("\r\nERROR: Failed to build TCPS identity. check buffer size.\r\n\r\n");
+    }
     X509GetAliasCertTBS(&derCtx, &x509AliasTBSData,
         &aliasKeyPub, &deviceIDPub,
         Fwid, RIOT_DIGEST_LENGTH,
@@ -285,7 +293,7 @@ CreateDeviceAuthBundle(
 
     // Copy Alias Key Certificate
     length = sizeof(PEM);
-    DERtoPEM(&derCtx, CERT_TYPE, PEM, &length);
+    DERtoPEM(&derCtx, R_CERT_TYPE, PEM, &length);
     *AliasCertBufSize = length;
     memcpy(AliasCertBuffer, PEM, length);
 
@@ -318,10 +326,13 @@ CreateDeviceAuthBundle(
         digest[0] &= 0x7F; // Ensure that the serial number is positive
         digest[0] |= 0x01; // Ensure that there is no leading zero
         memcpy(x509DeviceTBSData.SerialNum, digest, sizeof(x509DeviceTBSData.SerialNum));
-        BuildTCPSDeviceIdentity(&deviceIDPub,
+        status = BuildTCPSDeviceIdentity(&deviceIDPub,
             AuthKeyPub,
             NULL, 0,
-            &Tcps, &TcpsLen);
+            Tcps, TCPS_ID_BUFFER_LENGTH, &TcpsLen);
+        if (status != RIOT_SUCCESS) {
+            printf("\r\nERROR: Failed to build TCPS identity. check buffer size.\r\n\r\n");
+        }
         X509GetDeviceCertTBS(&derCtx, &x509DeviceTBSData, &deviceIDPub, NULL, Tcps, TcpsLen, 1);
 
         // Sign the DeviceID Certificate's TBS region
@@ -354,10 +365,13 @@ CreateDeviceAuthBundle(
         digest[0] &= 0x7F; // Ensure that the serial number is positive
         digest[0] |= 0x01; // Ensure that there is no leading zero
         memcpy(x509DeviceTBSData.SerialNum, digest, sizeof(x509DeviceTBSData.SerialNum));
-        BuildTCPSDeviceIdentity(&deviceIDPub,
+        status = BuildTCPSDeviceIdentity(&deviceIDPub,
             AuthKeyPub,
             NULL, 0,
-            &Tcps, &TcpsLen);
+            Tcps, TCPS_ID_BUFFER_LENGTH, &TcpsLen);
+        if (status != RIOT_SUCCESS) {
+            printf("\r\nERROR: Failed to build TCPS identity. check buffer size.\r\n\r\n");
+        }
         X509GetDeviceCertTBS(&derCtx, &x509DeviceTBSData, &deviceIDPub, (RIOT_ECC_PUBLIC *)eccRootPubBytes, Tcps, TcpsLen, 1);
 
         // Sign the DeviceID Certificate's TBS region
@@ -369,7 +383,7 @@ CreateDeviceAuthBundle(
 
     // Copy DeviceID Certificate or CSR
     length = sizeof(PEM);
-    DERtoPEM(&derCtx, CERT_TYPE, PEM, &length);
+    DERtoPEM(&derCtx, R_CERT_TYPE, PEM, &length);
     *DeviceCertBufSize = length;
     memcpy(DeviceCertBuffer, PEM, length);
 
@@ -404,7 +418,7 @@ CreateDeviceAuthBundle(
 
     // Copy "root" CA Certificate
     length = sizeof(PEM);
-    DERtoPEM(&derCtx, CERT_TYPE, PEM, &length);
+    DERtoPEM(&derCtx, R_CERT_TYPE, PEM, &length);
 
 #ifdef DEBUG
     printf("\"root\" CA Cert");
@@ -415,8 +429,6 @@ CreateDeviceAuthBundle(
     WriteBinaryFile("R00tCrt.cer", (uint8_t *)PEM, length);
 #endif
 
-    // Cleanup any allocated heap.
-    FreeTCPSId( Tcps );
     return 0;
 }
 

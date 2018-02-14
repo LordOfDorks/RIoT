@@ -6,7 +6,7 @@ CborError
 cbor_value_ref_byte_string(
     CborValue *Cborstring,
     const uint8_t **Bstr,
-    uint32_t *BstrSize,
+    size_t *BstrSize,
     CborValue *Next
 )
 
@@ -61,7 +61,7 @@ CborError
 cbor_value_ref_text_string(
     CborValue *Cborstring,
     const uint8_t **Bstr,
-    uint32_t *BstrSize,
+    size_t *BstrSize,
     CborValue *Next
 )
 {

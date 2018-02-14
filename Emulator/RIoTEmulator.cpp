@@ -344,7 +344,7 @@ CreateDeviceAuthBundle(
     else if (DeviceCertType == RIOT_CSR) {
         // Generating CSR
         DERInitContext(&derCtx, derBuffer, DER_MAX_TBS);
-        X509GetDERCsrTbs(&derCtx, &x509AliasTBSData, &deviceIDPub);
+        X509GetDERCsrTBS(&derCtx, &x509AliasTBSData, &deviceIDPub, NULL, 0);
 
         // Sign the Alias Key Certificate's TBS region
         RiotCrypt_Sign(&tbsSig, derCtx.Buffer, derCtx.Position, &deviceIDPriv);

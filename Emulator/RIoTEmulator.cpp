@@ -429,6 +429,17 @@ CreateDeviceAuthBundle(
     WriteBinaryFile("R00tCrt.cer", (uint8_t *)PEM, length);
 #endif
 
+    // print root private
+    length = sizeof(PEM);
+    DERInitContext(&derCtx, derBuffer, DER_MAX_TBS);
+    X509GetDEREcc(&derCtx, *(RIOT_ECC_PUBLIC*)eccRootPubBytes, *(RIOT_ECC_PRIVATE*)eccRootPrivBytes);
+    DERtoPEM(&derCtx, R_ECC_PRIVATEKEY_TYPE, PEM, &length);
+
+#ifdef DEBUG
+    PEM[length] = '\0'; // JUST FOR PRINTF
+    printf("%s", PEM);
+#endif
+
     return 0;
 }
 

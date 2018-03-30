@@ -1,3 +1,6 @@
 [submodule "External/tinycbor"]
 	path = External/tinycbor
 	url = https://github.com/intel/tinycbor.git
+[submodule "External/ms-tpm-20-ref"]
+	path = External/ms-tpm-20-ref
+	url = https://github.com/LordOfDorks/ms-tpm-20-ref.git

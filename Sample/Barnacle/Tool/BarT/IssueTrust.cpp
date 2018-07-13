@@ -1,5 +1,5 @@
 #include "stdafx.h"
-
+//ReIssueCert
 PCCERT_CONTEXT ReIssueCert(PCCERT_CONTEXT device,
                            PCCERT_CONTEXT devAuthority,
                            PCCERT_CONTEXT appAuthority)

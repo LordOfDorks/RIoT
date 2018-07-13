@@ -1,5 +1,5 @@
 #include "stdafx.h"
-
+//SignAgent
 void SignAgent(
     std::wstring fileName,
     PCCERT_CONTEXT appAuthCert,
